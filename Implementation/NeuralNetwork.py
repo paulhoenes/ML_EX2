@@ -1,3 +1,5 @@
+import numpy as np
+
 class NeuralNetwork:
     def __init__(self, input_size=8,
                  hidden1_size=100,
@@ -155,7 +157,7 @@ class NeuralNetwork:
         self.b0 -= self.lr * db0
 
     def train(self, X, y):
-        # Get the prediciton for current wheights
+        # Get the prediction for current weights
         y_pred = self.forward(X)
 
         # Compute the loss
