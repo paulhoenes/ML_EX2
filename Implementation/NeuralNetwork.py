@@ -1,16 +1,19 @@
 import numpy as np
 
 class NeuralNetwork:
+
     def __init__(self, input_size=8,
                  hidden1_size=100,
                  hidden2_size=50,
                  output_size=1,
                  lr=0.1,
                  activation_hidden='relu',
-                 l2_lambda=0.0):
+                 l2_lambda=0.0,
+                 multiclass=False):
 
         # activation function
         self.activation_hidden = activation_hidden
+        self.softmax_output = multiclass
 
         # Learning rate
         self.lr = lr
@@ -35,26 +38,23 @@ class NeuralNetwork:
         # L2 regularization parameter
         self.l2_lambda = l2_lambda
 
-    # Sigmoid for the output layer
-    def sigmoid(self, x):
-        return 1 / (1 + np.exp(-x))
-        # return expit(x)  # optional
-
     def sigmoid_deriv(self, a):
         return a * (1 - a)
 
         # Activation function selector
 
+    # Sigmoid for the output layer
+    def sigmoid(self, x):
+        return 1 / (1 + np.exp(-x))
+        # return expit(x)  # optional
+
     def activation(self, x):
         if self.activation_hidden == 'relu':
             return np.maximum(0, x)
-
         elif self.activation_hidden == 'sigmoid':
             return 1 / (1 + np.exp(-x))
-
         elif self.activation_hidden == 'tanh':
             return np.tanh(x)
-
         else:
             raise ValueError("Unsupported activation function")
 
@@ -72,15 +72,18 @@ class NeuralNetwork:
         else:
             raise ValueError("Unsupported activation function")
 
+
     # Loss function
-    # Binary Cross-Entropy
+    # Binary Cross-Entropy or softmax
     def loss(self, y_true, y_pred, l2_lambda=0.0):
         epsilon = 1e-12  # avoid log(0)
         y_pred = np.clip(y_pred, epsilon, 1 - epsilon)  # if y_pred is < epsilon
-        loss_bce = -np.mean(y_true * np.log(y_pred) + (1 - y_true) * np.log(1 - y_pred))
+        if self.softmax_output:
+            loss_bce = -np.mean(np.sum(y_true * np.log(y_pred), axis= 0))
+        else:
+            loss_bce = -np.mean(y_true * np.log(y_pred) + (1 - y_true) * np.log(1 - y_pred))
 
         # L2 regularization
-
         l2_term = (
                 np.sum(np.square(self.w0)) +
                 np.sum(np.square(self.w1)) +
@@ -93,6 +96,11 @@ class NeuralNetwork:
         epsilon = 1e-12
         y_pred = np.clip(y_pred, epsilon, 1 - epsilon)
         return (y_pred - y_true) / (y_pred * (1 - y_pred))
+
+    def softmax(self, z):
+        exp_z = np.exp(z - np.max(z, axis= 0, keepdims=True))
+        return exp_z / np.sum(exp_z, axis=0, keepdims=True)
+
 
     def forward(self, X):
 
@@ -109,7 +117,11 @@ class NeuralNetwork:
         self.a1 = self.activation(self.w1 @ self.a0 + self.b1)
 
         # output Layer
-        self.a2 = self.sigmoid(self.w2 @ self.a1 + self.b2)
+        if self.softmax_output:
+            # For softmax output, we use the exponential function
+            self.a2 = self.softmax(self.w2 @ self.a1 + self.b2)
+        else:
+            self.a2 = self.sigmoid(self.w2 @ self.a1 + self.b2)
 
         return self.a2
 
@@ -160,8 +172,12 @@ class NeuralNetwork:
         # Get the prediction for current weights
         y_pred = self.forward(X)
 
+
         # Compute the loss
         current_loss = self.loss(y.T, y_pred)
+
+        if np.isnan(current_loss):
+            raise ValueError("Loss is NaN, check your data or model parameters.")
 
         # Update the weights and biases
         self.backward(X, y)
