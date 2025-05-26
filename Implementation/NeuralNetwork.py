@@ -1,4 +1,6 @@
 import numpy as np
+np.random.seed(42)
+
 
 class NeuralNetwork:
 
@@ -75,7 +77,7 @@ class NeuralNetwork:
 
     # Loss function
     # Binary Cross-Entropy or softmax
-    def loss(self, y_true, y_pred, l2_lambda=0.0):
+    def loss(self, y_true, y_pred):
         epsilon = 1e-12  # avoid log(0)
         y_pred = np.clip(y_pred, epsilon, 1 - epsilon)  # if y_pred is < epsilon
         if self.softmax_output:
@@ -90,7 +92,7 @@ class NeuralNetwork:
                 np.sum(np.square(self.w2))
         )
 
-        return loss_bce + l2_lambda * l2_term
+        return loss_bce + self.l2_lambda * l2_term
 
     def loss_deriv(self, y_true, y_pred):
         epsilon = 1e-12
@@ -171,7 +173,6 @@ class NeuralNetwork:
     def train(self, X, y):
         # Get the prediction for current weights
         y_pred = self.forward(X)
-
 
         # Compute the loss
         current_loss = self.loss(y.T, y_pred)
