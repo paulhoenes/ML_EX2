@@ -1,7 +1,6 @@
 import numpy as np
 np.random.seed(42)
 
-
 class NeuralNetwork:
 
     def __init__(self, input_size=8,
@@ -118,9 +117,8 @@ class NeuralNetwork:
         # a1 = sig(z1)
         self.a1 = self.activation(self.w1 @ self.a0 + self.b1)
 
-        # output Layer
+        # output Layer - sigmoid or softmax 
         if self.softmax_output:
-            # For softmax output, we use the exponential function
             self.a2 = self.softmax(self.w2 @ self.a1 + self.b2)
         else:
             self.a2 = self.sigmoid(self.w2 @ self.a1 + self.b2)
